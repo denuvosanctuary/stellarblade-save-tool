@@ -31,8 +31,8 @@ fn main() -> Result<(), eframe::Error> {
             .with_drag_and_drop(true)
             .with_maximized(false)
             .with_maximize_button(false)
-            .with_icon(utils::load_icon()),
-            .with_resizable(false)
+            .with_icon(utils::load_icon())
+            .with_resizable(false),
         ..Default::default()
     };
     eframe::run_native(
