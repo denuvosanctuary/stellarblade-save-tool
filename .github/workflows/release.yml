@@ -11,18 +11,34 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
+      
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly
+      
       - name: Install dependencies for Linux
         if: matrix.platform == 'ubuntu-latest'
-        run: rustup target add x86_64-unknown-linux-gnu
+        run: rustup target add x86_64-unknown-linux-musl
+      
       - name: Install dependencies for Windows
         if: matrix.platform == 'windows-latest'
         run: rustup target add x86_64-pc-windows-msvc
+      
+      - name: Configure sccache for Linux (ephemeral build)
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTFLAGS=--cfg profile=ephemeral-build" >> $GITHUB_ENV
+      
+      - name: Run sccache-cache (Linux only)
+        if: matrix.platform == 'ubuntu-latest'
+        uses: mozilla-actions/sccache-action@v0.0.7
+      
       - name: Build Executable
-        run: cargo build --release --target ${{ matrix.platform == 'ubuntu-latest' && 'x86_64-unknown-linux-gnu' || 'x86_64-pc-windows-msvc' }}
+        run: cargo build --release --target ${{ matrix.platform == 'ubuntu-latest' && 'x86_64-unknown-linux-musl' || 'x86_64-pc-windows-msvc' }}
+      
       - uses: actions/upload-artifact@v4
         with:
-          name: steamid-replacer-${{ matrix.platform == 'ubuntu-latest' && 'x86_64-unknown-linux-gnu' || 'x86_64-pc-windows-msvc' }}
-          path: target/${{ matrix.platform == 'ubuntu-latest' && 'x86_64-unknown-linux-gnu' || 'x86_64-pc-windows-msvc' }}/release/steamid-replacer${{ matrix.platform == 'windows-latest' && '.exe' || '' }}
+          name: steamid-replacer-${{ matrix.platform == 'ubuntu-latest' && 'x86_64-unknown-linux-musl' || 'x86_64-pc-windows-msvc' }}
+          path: target/${{ matrix.platform == 'ubuntu-latest' && 'x86_64-unknown-linux-musl' || 'x86_64-pc-windows-msvc' }}/release/steamid-replacer${{ matrix.platform == 'windows-latest' && '.exe' || '' }}
