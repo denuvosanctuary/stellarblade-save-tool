@@ -12,10 +12,10 @@ jobs:
         include:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            executable: stellarblade-save-tool.exe  
+            executable: steamid-replacer.exe  
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            executable: stellarblade-save-tool
+            executable: steamid-replacer
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -31,13 +31,10 @@ jobs:
         run: sudo apt-get install -y mingw-w64
 
       - name: Build Executable
-        run: |
-          cargo build --release --target ${{ matrix.target }}
-          echo "Listing the contents of the release directory:"
-          ls -l target/${{ matrix.target }}/release/
+        run: cargo build --release --target ${{ matrix.target }}
 
       - name: Upload Executable
         uses: actions/upload-artifact@v4
         with:
-          name: stellarblade-save-tool-${{ matrix.target }}
+          name: steamid-replacer-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/${{ matrix.executable }}
