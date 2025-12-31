@@ -1,4 +1,4 @@
-name: Build
+name: Build Binaries
 on: [push, pull_request]
 
 jobs:
@@ -8,8 +8,8 @@ jobs:
       matrix:
         platform: [ubuntu-latest, windows-latest]
         target:
-          - x86_64-unknown-linux-gnu
-          - x86_64-pc-windows-msvc
+          - x86_64-unknown-linux-gnu  # Only for Ubuntu
+          - x86_64-pc-windows-msvc    # Only for Windows
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -22,6 +22,10 @@ jobs:
       - name: Install dependencies for Linux
         if: matrix.platform == 'ubuntu-latest'
         run: rustup target add x86_64-unknown-linux-gnu
+
+      - name: Install dependencies for Windows
+        if: matrix.platform == 'windows-latest'
+        run: rustup target add x86_64-pc-windows-msvc
 
       - name: Build Executable
         run: cargo build --release --target ${{ matrix.target }}
