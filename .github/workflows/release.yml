@@ -1,4 +1,4 @@
-name: Build Binaries
+name: Build
 on: [push, pull_request]
 
 jobs:
@@ -14,7 +14,7 @@ jobs:
       
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: nightly
+          toolchain: ${{ matrix.toolchain }}
       
       - name: Install dependencies for Linux
         if: matrix.platform == 'ubuntu-latest'
@@ -26,17 +26,27 @@ jobs:
       
       - name: Cache Rust target (Linux)
         if: matrix.platform == 'ubuntu-latest'
-        uses: swrs/docker-rust-cache@v1
+        uses: actions/cache@v4
         with:
-          target-dir: 'target/'
-          cache-on-failure: true
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
       
       - name: Cache Rust target (Windows)
         if: matrix.platform == 'windows-latest'
-        uses: Swatinem/rust-cache@v2
+        uses: actions/cache@v4
         with:
-          workspaces: "."
-          cache-on-failure: true
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          path: |
+            ~\.cargo\bin\
+            ~\.cargo\registry\index\
+            ~\.cargo\registry\cache\
+            ~\.cargo\git\db\
+            target/
       
       - name: Build Executable
         run: cargo build --release --target ${{ matrix.platform == 'ubuntu-latest' && 'x86_64-unknown-linux-musl' || 'x86_64-pc-windows-msvc' }}
