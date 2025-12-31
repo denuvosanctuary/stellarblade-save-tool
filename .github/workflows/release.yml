@@ -1,47 +1,33 @@
 name: Build
 on: [push, pull_request]
 
-env:
-  CARGO_TERM_COLOR: always
-
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.platform }}
     strategy:
       matrix:
-        include:
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            executable: steamid-replacer.exe
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-musl
-            executable: steamid-replacer
-
+        platform: [ubuntu-latest, windows-latest]
+        target:
+          - x86_64-unknown-linux-gnu
+          - x86_64-pc-windows-msvc
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install musl target (Linux only)
-        if: matrix.os == 'ubuntu-latest'
-        run: rustup target add x86_64-unknown-linux-musl
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@nightly
-
-      - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2
-
-      - name: Clear Rust Cache Before Build
-        run: cargo clean
+      - name: Install dependencies for Linux
+        if: matrix.platform == 'ubuntu-latest'
+        run: rustup target add x86_64-unknown-linux-gnu
 
       - name: Build Executable
         run: cargo build --release --target ${{ matrix.target }}
-
-      - name: Clear Rust Cache After Build
-        run: cargo clean
 
       - name: Upload Executable
         uses: actions/upload-artifact@v4
         with:
           name: steamid-replacer-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/${{ matrix.executable }}
+          path: target/${{ matrix.target }}/release/steamid-replacer${{ matrix.platform == 'windows-latest' && '.exe' || '' }}
