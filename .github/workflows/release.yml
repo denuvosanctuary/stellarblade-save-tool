@@ -10,7 +10,6 @@ jobs:
         toolchain: [nightly]
     runs-on: ${{ matrix.platform }}
     steps:
-      - run: cargo clean
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
         with:
