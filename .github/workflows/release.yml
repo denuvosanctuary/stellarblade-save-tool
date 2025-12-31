@@ -1,4 +1,4 @@
-name: Build Binaries
+name: Build
 on: [push, pull_request]
 
 jobs:
@@ -7,76 +7,22 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest, windows-latest]
-        toolchain: [stable, nightly]
+        toolchain: [nightly]
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ matrix.toolchain }}
-      - name: Build
-        run: cargo build --release --all-features
-
-  no_std:
-    name: no_std
-    strategy:
-      matrix:
-        platform: [ubuntu-latest, windows-latest]
-        toolchain: [stable, nightly]
-    runs-on: ${{ matrix.platform }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ matrix.toolchain }}
-      - name: Build
-        working-directory: no_std/nix
-        run: cargo build --release --all-features
-
-  no_std_win:
-    name: no_std-win
-    strategy:
-      matrix:
-        toolchain: [stable, nightly]
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ matrix.toolchain }}
-      - name: Build
-        working-directory: no_std/win
-        run: cargo build --release --all-features
-
-  no_main_win:
-    name: no_main-win
-    strategy:
-      matrix:
-        toolchain: [stable, nightly]
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ matrix.toolchain }}
-      - name: Build
-        working-directory: no_main/win
-        run: cargo build --release --all-features
-
-  build_std:
-    name: build-std
-    strategy:
-      matrix:
-        project_dir: [build_std, no_main/nix]
-    runs-on: ubuntu-latest
-    steps:
+      - run: cargo clean
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly
-      - name: Build
-        working-directory: ${{ matrix.project_dir }}
-        run: |
-          rustup component add rust-src
-          RUSTFLAGS="-Zlocation-detail=none -Zfmt-debug=none" cargo +nightly build -Z build-std=std,panic_abort -Z build-std-features="optimize_for_size" --target x86_64-unknown-linux-gnu --release
-          RUSTFLAGS="-Zunstable-options -Cpanic=immediate-abort" cargo +nightly build -Z build-std=std,panic_abort -Z build-std-features= --target x86_64-unknown-linux-gnu --release
+      - name: Install dependencies for Linux
+        if: matrix.platform == 'ubuntu-latest'
+        run: rustup target add x86_64-unknown-linux-gnu
+      - name: Install dependencies for Windows
+        if: matrix.platform == 'windows-latest'
+        run: rustup target add x86_64-pc-windows-msvc
+      - run: cargo build --release --target ${{ matrix.target }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: steamid-replacer-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/steamid-replacer${{ matrix.platform == 'windows-latest' && '.exe' || '' }}
