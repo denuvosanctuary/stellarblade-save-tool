@@ -1,4 +1,4 @@
-name: Build
+name: Build Binaries
 on: [push, pull_request]
 
 jobs:
@@ -16,42 +16,36 @@ jobs:
         with:
           toolchain: ${{ matrix.toolchain }}
       
-      - name: Install dependencies for Linux
+      - name: Install Linux target & strip
         if: matrix.platform == 'ubuntu-latest'
-        run: rustup target add x86_64-unknown-linux-musl
+        run: |
+          rustup target add x86_64-unknown-linux-gnu
+          sudo apt-get update
+          sudo apt-get install -y binutils
       
-      - name: Install dependencies for Windows
+      - name: Install Windows target
         if: matrix.platform == 'windows-latest'
         run: rustup target add x86_64-pc-windows-msvc
       
-      - name: Cache Rust target (Linux)
+      - name: Cache Rust
+        uses: actions/cache@v4
+        with:
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          path: |
+            ~/.cargo/
+            target/
+      
+      - name: Build Linux (force strip)
         if: matrix.platform == 'ubuntu-latest'
-        uses: actions/cache@v4
-        with:
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
+        run: |
+          cargo build --release --target x86_64-unknown-linux-gnu
+          strip --strip-all --strip-unneeded target/x86_64-unknown-linux-gnu/release/steamid-replacer
       
-      - name: Cache Rust target (Windows)
+      - name: Build Windows
         if: matrix.platform == 'windows-latest'
-        uses: actions/cache@v4
-        with:
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          path: |
-            ~\.cargo\bin\
-            ~\.cargo\registry\index\
-            ~\.cargo\registry\cache\
-            ~\.cargo\git\db\
-            target/
-      
-      - name: Build Executable
-        run: cargo build --release --target ${{ matrix.platform == 'ubuntu-latest' && 'x86_64-unknown-linux-musl' || 'x86_64-pc-windows-msvc' }}
+        run: cargo build --release --target x86_64-pc-windows-msvc
       
       - uses: actions/upload-artifact@v4
         with:
-          name: steamid-replacer-${{ matrix.platform == 'ubuntu-latest' && 'x86_64-unknown-linux-musl' || 'x86_64-pc-windows-msvc' }}
-          path: target/${{ matrix.platform == 'ubuntu-latest' && 'x86_64-unknown-linux-musl' || 'x86_64-pc-windows-msvc' }}/release/steamid-replacer${{ matrix.platform == 'windows-latest' && '.exe' || '' }}
+          name: steamid-replacer-${{ matrix.platform }}
+          path: target/${{ matrix.platform == 'ubuntu-latest' && 'x86_64-unknown-linux-gnu' || 'x86_64-pc-windows-msvc' }}/release/steamid-replacer${{ matrix.platform == 'windows-latest' && '.exe' || '' }}
