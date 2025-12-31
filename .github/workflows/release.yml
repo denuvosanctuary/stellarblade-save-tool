@@ -12,10 +12,11 @@ jobs:
         include:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            executable: steamid-replacer.exe  
+            executable: steamid-replacer.exe
           - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
+            target: x86_64-unknown-linux-musl
             executable: steamid-replacer
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -25,10 +26,6 @@ jobs:
 
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
-
-      - name: Install cross-compiling dependencies for Windows (Ubuntu only)
-        if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get install -y mingw-w64
 
       - name: Build Executable
         run: cargo build --release --target ${{ matrix.target }}
